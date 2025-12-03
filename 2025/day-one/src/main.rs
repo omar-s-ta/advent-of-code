@@ -36,14 +36,16 @@ fn main() -> std::io::Result<()> {
     let reader = std::io::BufReader::new(file);
 
     let mut tracker = Tracker::new();
-    for line in reader.lines() {
-        let line = line?;
-        let (dir, offset) = line.split_at(1);
-        offset
-            .parse::<u16>()
-            .iter()
-            .for_each(|&u| tracker.advance(dir, u.rem_euclid(MOD)));
-    }
+    reader.lines().for_each(|line| {
+        line.iter().for_each(|cmd| {
+            let (dir, offset) = cmd.split_at(1);
+            offset
+                .parse::<u16>()
+                .iter()
+                .for_each(|&u| tracker.advance(dir, u.rem_euclid(MOD)));
+        });
+    });
     println!("{}", tracker.result);
+
     Ok(())
 }
