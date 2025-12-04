@@ -16,11 +16,11 @@ impl Tracker {
     }
 
     pub fn advance_pt_one(&mut self, dir: &str, offset: &u16) {
-        let _: () = match dir {
+        match dir {
             "L" => self.sub(&offset.rem_euclid(MOD)),
             "R" => self.add(&offset.rem_euclid(MOD)),
             _ => panic!("no good"),
-        };
+        }
     }
 
     fn add(&mut self, offset: &u16) {
