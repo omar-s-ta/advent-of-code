@@ -15,15 +15,26 @@ impl Tracker {
         }
     }
 
-    pub fn advance(&mut self, dir: &str, offset: u16) {
+    pub fn advance_pt_one(&mut self, dir: &str, offset: &u16) {
         let _: () = match dir {
-            "L" => self.value = (self.value + MOD - offset).rem_euclid(MOD),
-            "R" => self.value = (self.value + offset).rem_euclid(MOD),
+            "L" => self.sub(&offset.rem_euclid(MOD)),
+            "R" => self.add(&offset.rem_euclid(MOD)),
             _ => panic!("no good"),
         };
-        self.tick_on_zero()
     }
 
+    fn add(&mut self, offset: &u16) {
+        self.value = (self.value + offset).rem_euclid(MOD);
+        self.tick_on_zero();
+    }
+
+    #[inline]
+    fn sub(&mut self, offset: &u16) {
+        self.value = (self.value + MOD - offset).rem_euclid(MOD);
+        self.tick_on_zero();
+    }
+
+    #[inline]
     fn tick_on_zero(&mut self) {
         if self.value == 0 {
             self.result += 1;
@@ -42,7 +53,7 @@ fn main() -> std::io::Result<()> {
             offset
                 .parse::<u16>()
                 .iter()
-                .for_each(|&u| tracker.advance(dir, u.rem_euclid(MOD)));
+                .for_each(|u| tracker.advance_pt_one(dir, u));
         });
     });
     println!("{}", tracker.result);
