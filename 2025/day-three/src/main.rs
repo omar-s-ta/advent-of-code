@@ -23,7 +23,7 @@ impl BatteryBank {
                     .skip(1)
                     .max()
                     .and_then(|ch| ch.to_digit(10))
-                    .map(|dl| d * 10 + dl)
+                    .map(|dr| d * 10 + dr)
                     .unwrap_or_default();
                 bl.max(br)
             })
