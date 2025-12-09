@@ -7,13 +7,38 @@ fn main() -> std::io::Result<()> {
     let reader = std::io::BufReader::new(file);
     let joltage = reader
         .lines()
-        .map(|line| line.map(max_joltage_pt_two).unwrap_or(0))
+        .map(|line| line.map(max_joltage_pt_two_fp).unwrap_or(0))
         .sum::<usize>();
 
     println!("{}", joltage);
     Ok(())
 }
 
+fn max_joltage_pt_two_fp(string: String) -> usize {
+    let to_remove = string.len() - LIMIT;
+    string
+        .chars()
+        .fold((Vec::new(), to_remove), |(mut stack, remaining), ch| {
+            let removed = stack
+                .iter()
+                .rev()
+                .take_while(|&&digit| remaining > 0 && ch > digit)
+                .count()
+                .min(remaining);
+
+            stack.truncate(stack.len() - removed);
+            stack.push(ch);
+            (stack, remaining - removed)
+        })
+        .0
+        .into_iter()
+        .take(LIMIT)
+        .fold(0, |acc, ch| {
+            acc * 10 + ch.to_digit(10).unwrap_or_default() as usize
+        })
+}
+
+#[allow(dead_code)]
 fn max_joltage_pt_two(string: String) -> usize {
     let mut to_remove = string.len() - LIMIT;
     let mut stack = Vec::new();
