@@ -1,112 +1,100 @@
 use std::{collections::VecDeque, io::BufRead};
 
+type Position = (usize, usize);
+
 struct Grid {
-    path: Vec<String>,
+    grid: Vec<String>,
     rows: usize,
     cols: usize,
-    taken: Vec<Vec<bool>>,
 }
 
 impl Grid {
     fn new(grid: Vec<String>) -> Self {
-        let n = grid.len();
-        let m = grid[0].len();
-        Grid {
-            path: grid,
-            rows: n,
-            cols: m,
-            taken: vec![vec![false; m]; n],
-        }
+        let rows = grid.len();
+        let cols = grid.first().map_or(0, |r| r.len());
+        Grid { grid, rows, cols }
     }
 
-    #[allow(dead_code)]
-    fn accessible_rolls_pt_one(&self) -> usize {
-        self.path
-            .iter()
-            .enumerate()
-            .map(|(i, row)| {
-                row.char_indices()
-                    .filter(|(j, c)| *c == '@' && self.accessible(i, *j))
-                    .count()
-            })
-            .sum::<usize>()
+    fn is_roll_paper(&self, (x, y): Position) -> bool {
+        (x < self.rows)
+            .then(|| &self.grid[x])
+            .and_then(|row| row.chars().nth(y))
+            .is_some_and(|c| c == '@')
     }
 
-    fn accessible_rolls_pt_two(&mut self) -> usize {
-        let mut in_degrees = self.in_degrees();
-        let mut queue = VecDeque::new();
-
-        for (i, row) in in_degrees.iter().enumerate() {
-            for (j, value) in row.iter().enumerate() {
-                if self.is_roll_of_paper(i, j) && *value < 4 {
-                    queue.push_back((i, j));
-                }
-            }
-        }
-
-        let mut removed = 0;
-        while let Some((x, y)) = queue.pop_front() {
-            if self.taken[x][y] {
-                continue;
-            }
-            self.taken[x][y] = true;
-            removed += 1;
-            for i in -1..=1 {
-                for j in -1..=1 {
-                    if i == 0 && j == 0 {
-                        continue;
-                    }
-                    let nx = (x as i64 + i) as usize;
-                    let ny = (y as i64 + j) as usize;
-                    if self.is_roll_of_paper(nx, ny) {
-                        in_degrees[nx][ny] = in_degrees[nx][ny].wrapping_sub(1);
-                        if in_degrees[nx][ny] < 4 {
-                            queue.push_back((nx, ny));
-                        }
-                    }
-                }
-            }
-        }
-        removed
+    fn neighbor_roll_papers(&self, (x, y): Position) -> impl Iterator<Item = Position> {
+        (-1..=1)
+            .flat_map(|i| (-1..=1).map(move |j| (i, j)))
+            .filter(|&(i, j)| !(i == 0 && j == 0))
+            .map(move |(i, j)| ((x as i64 + i) as usize, (y as i64 + j) as usize))
+            .filter(|&(i, j)| self.is_roll_paper((i, j)))
     }
 
-    fn adjacent_counts(&self, x: usize, y: usize) -> usize {
-        if !self.is_roll_of_paper(x, y) {
-            0
+    fn adjacent_roll_paper_count(&self, position: Position) -> usize {
+        if self.is_roll_paper(position) {
+            self.neighbor_roll_papers(position).count()
         } else {
-            let mut count = 0;
-            for i in -1..=1 {
-                for j in -1..=1 {
-                    if i == 0 && j == 0 {
-                        continue;
-                    }
-                    let nx = (x as i64 + i) as usize;
-                    let ny = (y as i64 + j) as usize;
-                    if self.is_roll_of_paper(nx, ny) {
-                        count += 1;
-                    }
-                }
-            }
-            count
+            0
         }
+    }
+
+    fn positions(&self) -> impl Iterator<Item = Position> {
+        (0..self.rows).flat_map(|i| (0..self.cols).map(move |j| (i, j)))
     }
 
     fn in_degrees(&self) -> Vec<Vec<usize>> {
-        let mut degrees = vec![vec![0; self.cols]; self.rows];
-        for (i, row) in degrees.iter_mut().enumerate() {
-            for (j, degree) in row.iter_mut().enumerate() {
-                *degree += self.adjacent_counts(i, j);
+        (0..self.rows)
+            .map(|i| {
+                (0..self.cols)
+                    .map(|j| self.adjacent_roll_paper_count((i, j)))
+                    .collect()
+            })
+            .collect()
+    }
+
+    fn accessible_rolls_pt_one(&self) -> usize {
+        self.positions()
+            .filter(|&position| {
+                self.is_roll_paper(position) && self.adjacent_roll_paper_count(position) < 4
+            })
+            .count()
+    }
+
+    fn accessible_rolls_pt_two(&self) -> usize {
+        let mut in_degrees = self.in_degrees();
+        let mut taken = vec![vec![false; self.cols]; self.rows];
+
+        let queue = self
+            .positions()
+            .filter(|&(i, j)| {
+                self.is_roll_paper((i, j)) && self.adjacent_roll_paper_count((i, j)) < 4
+            })
+            .collect::<VecDeque<_>>();
+
+        self.process_queue(queue, &mut in_degrees, &mut taken)
+    }
+
+    fn process_queue(
+        &self,
+        mut queue: VecDeque<Position>,
+        in_degrees: &mut [Vec<usize>],
+        taken: &mut [Vec<bool>],
+    ) -> usize {
+        let mut removed = 0;
+        while let Some(position @ (x, y)) = queue.pop_front() {
+            if taken[x][y] {
+                continue;
             }
+            taken[x][y] = true;
+            removed += 1;
+            self.neighbor_roll_papers(position).for_each(|(i, j)| {
+                in_degrees[i][j] = in_degrees[i][j].saturating_sub(1);
+                if in_degrees[i][j] < 4 {
+                    queue.push_back((i, j));
+                }
+            });
         }
-        degrees
-    }
-
-    fn accessible(&self, x: usize, y: usize) -> bool {
-        self.adjacent_counts(x, y) < 4
-    }
-
-    fn is_roll_of_paper(&self, x: usize, y: usize) -> bool {
-        x < self.rows && self.path[x].chars().nth(y).is_some_and(|c| c == '@')
+        removed
     }
 }
 
@@ -118,7 +106,8 @@ fn main() -> std::io::Result<()> {
         .map(|line| line.unwrap_or_default())
         .collect::<Vec<_>>();
 
-    let mut grid = Grid::new(grid);
-    println!("{}", grid.accessible_rolls_pt_two());
+    let grid = Grid::new(grid);
+    println!("{}", grid.accessible_rolls_pt_one());
+    println!("{}", grid.accessible_rolls_pt_two(),);
     Ok(())
 }
