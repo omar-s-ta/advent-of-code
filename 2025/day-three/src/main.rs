@@ -31,7 +31,7 @@ fn max_joltage_pt_two_fp(string: String) -> usize {
             (stack, remaining - removed)
         })
         .0
-        .into_iter()
+        .iter()
         .take(LIMIT)
         .fold(0, |acc, ch| {
             acc * 10 + ch.to_digit(10).unwrap_or_default() as usize
