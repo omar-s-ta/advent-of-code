@@ -108,6 +108,6 @@ fn main() -> std::io::Result<()> {
 
     let grid = Grid::new(grid);
     println!("{}", grid.accessible_rolls_pt_one());
-    println!("{}", grid.accessible_rolls_pt_two(),);
+    println!("{}", grid.accessible_rolls_pt_two());
     Ok(())
 }
