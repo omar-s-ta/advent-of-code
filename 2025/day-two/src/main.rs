@@ -73,16 +73,13 @@ fn is_invalid_pt_one(n: &u64) -> bool {
     (n / d) == (n % d)
 }
 
-fn can_be_divided(mut n: u64, divisor: u64) -> bool {
-    let bucket = n % divisor;
-    while n != 0 {
-        let next_bucket = n % divisor;
-        if bucket != next_bucket {
-            return false;
-        }
-        n /= divisor;
-    }
-    true
+fn can_be_divided(n: u64, divisor: u64) -> bool {
+    let first_bucket = n % divisor;
+    std::iter::successors(Some(n), |&x| {
+        let next = x / divisor;
+        (next != 0).then_some(next)
+    })
+    .all(|x| x % divisor == first_bucket)
 }
 
 fn is_invalid_pt_two(n: &u64) -> bool {
