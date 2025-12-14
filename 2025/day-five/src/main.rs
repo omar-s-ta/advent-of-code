@@ -2,25 +2,33 @@ use std::io::BufRead;
 
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 struct IdRange {
-    b: u64,
-    e: u64,
+    b: usize,
+    e: usize,
 }
 
 impl IdRange {
-    fn new(b: u64, e: u64) -> Self {
+    fn new(b: usize, e: usize) -> Self {
         IdRange { b, e }
     }
 
-    fn contains(&self, elem: u64) -> bool {
+    fn contains(&self, elem: usize) -> bool {
         (self.b..=self.e).contains(&elem)
+    }
+
+    fn len(&self) -> usize {
+        if self.b > self.e {
+            0
+        } else {
+            self.e - self.b + 1
+        }
     }
 }
 
 impl From<Vec<&str>> for IdRange {
     fn from(value: Vec<&str>) -> Self {
         let (s, e) = (value[0], value[1]);
-        let s = s.trim().parse::<u64>().unwrap();
-        let e = e.trim().parse::<u64>().unwrap();
+        let s = s.trim().parse::<usize>().unwrap();
+        let e = e.trim().parse::<usize>().unwrap();
         IdRange::new(s, e)
     }
 }
@@ -54,7 +62,7 @@ fn main() -> std::io::Result<()> {
     let count = lines
         .iter()
         .skip(empty_line_idx)
-        .filter_map(|line| line.parse::<u64>().ok())
+        .filter_map(|line| line.parse::<usize>().ok())
         .filter(|n| ranges.iter().any(|r| r.contains(*n)))
         .count();
 
