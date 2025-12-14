@@ -80,7 +80,7 @@ fn main() -> std::io::Result<()> {
 
     let fresh = ranges
         .iter()
-        .fold(Vec::<IdRange>::new(), merge_fn)
+        .fold(Vec::new(), merge_fn)
         .iter()
         .map(|r| r.len())
         .sum::<usize>();
