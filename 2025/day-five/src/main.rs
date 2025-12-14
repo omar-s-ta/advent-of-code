@@ -1,35 +1,18 @@
-use std::{io::BufRead, ops::RangeInclusive};
+use std::io::BufRead;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 struct IdRange {
-    value: RangeInclusive<u64>,
+    b: u64,
+    e: u64,
 }
 
 impl IdRange {
     fn new(b: u64, e: u64) -> Self {
-        IdRange {
-            value: RangeInclusive::new(b, e),
-        }
+        IdRange { b, e }
     }
 
     fn contains(&self, elem: u64) -> bool {
-        self.value.contains(&elem)
-    }
-}
-
-impl PartialOrd for IdRange {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for IdRange {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.value.start().cmp(other.value.start()) {
-            std::cmp::Ordering::Equal => {}
-            ord => return ord,
-        }
-        self.value.end().cmp(other.value.end())
+        (self.b..=self.e).contains(&elem)
     }
 }
 
