@@ -44,20 +44,33 @@ impl From<Vec<&str>> for IdRange {
 
 fn main() -> std::io::Result<()> {
     let file = std::fs::File::open("src/in.txt")?;
-    let mut lines = std::io::BufReader::new(file).lines().map_while(Result::ok);
-
-    let mut ranges = lines
-        .by_ref()
-        .take_while(|line| !line.is_empty())
-        .map(|line| {
-            let range = line.splitn(2, '-').collect::<Vec<_>>();
-            IdRange::from(range)
-        })
+    let lines = std::io::BufReader::new(file)
+        .lines()
+        .map_while(Result::ok)
         .collect::<Vec<_>>();
 
-    ranges.sort();
+    let empty_line_idx = lines
+        .iter()
+        .position(|l| l.is_empty())
+        .unwrap_or(lines.len());
+
+    let ranges = {
+        let mut ranges_to_sort = lines
+            .iter()
+            .take(empty_line_idx)
+            .map(|l| {
+                let range = l.splitn(2, '-').collect::<Vec<_>>();
+                IdRange::from(range)
+            })
+            .collect::<Vec<_>>();
+
+        ranges_to_sort.sort();
+        ranges_to_sort
+    };
 
     let count = lines
+        .iter()
+        .skip(empty_line_idx)
         .filter_map(|line| line.parse::<u64>().ok())
         .filter(|n| ranges.iter().any(|r| r.contains(*n)))
         .count();
