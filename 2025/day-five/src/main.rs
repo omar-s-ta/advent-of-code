@@ -12,7 +12,7 @@ impl IdRange {
     }
 
     fn contains(&self, elem: usize) -> bool {
-        (self.b..=self.e).contains(&elem)
+        self.b <= elem && elem <= self.e
     }
 
     fn len(&self) -> usize {
