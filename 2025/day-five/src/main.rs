@@ -15,6 +15,14 @@ impl IdRange {
         self.b <= elem && elem <= self.e
     }
 
+    fn mergeable(&self, other: &Self) -> bool {
+        other.b <= self.e
+    }
+
+    fn merge(&mut self, other: &Self) {
+        self.e = self.e.max(other.e)
+    }
+
     fn len(&self) -> usize {
         if self.b > self.e {
             0
@@ -46,7 +54,7 @@ fn main() -> std::io::Result<()> {
         .unwrap_or(lines.len());
 
     let ranges = {
-        let mut ranges_to_sort = lines
+        let mut ranges_vec = lines
             .iter()
             .take(empty_line_idx)
             .map(|l| {
@@ -55,9 +63,27 @@ fn main() -> std::io::Result<()> {
             })
             .collect::<Vec<_>>();
 
-        ranges_to_sort.sort();
-        ranges_to_sort
+        ranges_vec.sort();
+        ranges_vec
     };
+
+    let merge_fn = |mut ingredients: Vec<IdRange>, ingredient| match ingredients.last_mut() {
+        Some(last) if last.mergeable(ingredient) => {
+            last.merge(ingredient);
+            ingredients
+        }
+        _ => {
+            ingredients.push(ingredient.clone());
+            ingredients
+        }
+    };
+
+    let fresh = ranges
+        .iter()
+        .fold(Vec::<IdRange>::new(), merge_fn)
+        .iter()
+        .map(|r| r.len())
+        .sum::<usize>();
 
     let count = lines
         .iter()
@@ -66,6 +92,6 @@ fn main() -> std::io::Result<()> {
         .filter(|n| ranges.iter().any(|r| r.contains(*n)))
         .count();
 
-    println!("{}", count);
+    println!("{} {}", count, fresh);
     Ok(())
 }
