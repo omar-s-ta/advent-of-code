@@ -22,7 +22,7 @@ impl Matrix {
         Matrix { value }
     }
 
-    fn count(&self) -> usize {
+    fn compute_pt_one(&self) -> usize {
         self.value
             .iter()
             .map(|r| {
@@ -63,11 +63,9 @@ fn main() -> std::io::Result<()> {
         .collect::<Vec<_>>();
 
     let matrix = Matrix::new(matrix);
-
-    // part-one
     {
         let matrix = matrix.transpose();
-        println!("{}", matrix.count());
+        println!("{}", matrix.compute_pt_one());
     }
 
     Ok(())
