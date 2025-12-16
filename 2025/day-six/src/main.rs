@@ -26,8 +26,8 @@ impl Matrix {
         self.value
             .iter()
             .enumerate()
-            .map(|(i, r)| {
-                let parsed = r.iter().filter_map(|s| s.parse::<usize>().ok());
+            .map(|(i, row)| {
+                let parsed = row.iter().filter_map(|s| s.parse::<usize>().ok());
                 if ops[i] == "*" {
                     parsed.product::<usize>()
                 } else {
