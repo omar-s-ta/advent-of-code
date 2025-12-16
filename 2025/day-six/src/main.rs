@@ -13,12 +13,10 @@ impl Matrix {
     fn transpose(&self) -> Self {
         let n = self.value.len();
         let m = self.value.first().map_or(0, |c| c.len());
-        let mut value = vec![vec!["".to_owned(); n]; m];
-        (0..n).for_each(|i| {
-            (0..m).for_each(|j| {
-                value[j][i] = self.value[i][j].clone();
-            });
-        });
+        let value = (0..m)
+            .map(|j| (0..n).map(|i| self.value[i][j].clone()).collect())
+            .collect();
+
         Matrix { value }
     }
 
@@ -41,31 +39,28 @@ impl Matrix {
 fn main() -> std::io::Result<()> {
     let f = std::fs::File::open("src/in.txt")?;
     let reader = std::io::BufReader::new(f);
-
-    let lines = reader
-        .lines()
-        .map_while(Result::ok)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .map(|l| l.trim().to_owned())
-        .collect::<Vec<_>>();
-
-    let matrix = lines
-        .iter()
+    let lines = reader.lines().map_while(Result::ok).collect::<Vec<_>>();
+    let ops = lines
+        .last()
         .map(|l| {
             l.split_whitespace()
-                .map(|s| s.trim().to_owned())
+                .map(|s| s.to_owned())
                 .collect::<Vec<_>>()
         })
-        .collect::<Vec<_>>();
-
-    let (matrix, ops) = matrix.split_at(matrix.len() - 1);
-    let ops = ops.first().expect("one row");
-    let matrix = Matrix::new(matrix.to_owned());
+        .expect("operations row");
 
     {
-        let matrix = matrix.transpose();
-        println!("{}", matrix.compute_pt_one(ops));
+        let matrix = lines
+            .iter()
+            .map(|l| {
+                l.split_whitespace()
+                    .map(|s| s.to_owned())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
+        let matrix = Matrix::new(matrix).transpose();
+        println!("{}", matrix.compute_pt_one(&ops));
     }
 
     Ok(())
