@@ -22,19 +22,16 @@ impl Matrix {
         Matrix { value }
     }
 
-    fn compute_pt_one(&self) -> usize {
+    fn compute_pt_one(&self, ops: &[String]) -> usize {
         self.value
             .iter()
-            .map(|r| {
-                let parsed = r
-                    .iter()
-                    .take(r.len() - 1)
-                    .filter_map(|s| s.parse::<usize>().ok());
-
-                match r.last() {
-                    Some(s) if s == "*" => parsed.product(),
-                    Some(s) if s == "+" => parsed.sum(),
-                    _ => 0,
+            .enumerate()
+            .map(|(i, r)| {
+                let parsed = r.iter().filter_map(|s| s.parse::<usize>().ok());
+                if ops[i] == "*" {
+                    parsed.product::<usize>()
+                } else {
+                    parsed.sum::<usize>()
                 }
             })
             .sum()
@@ -62,10 +59,13 @@ fn main() -> std::io::Result<()> {
         })
         .collect::<Vec<_>>();
 
-    let matrix = Matrix::new(matrix);
+    let (matrix, ops) = matrix.split_at(matrix.len() - 1);
+    let ops = ops.first().expect("one row");
+    let matrix = Matrix::new(matrix.to_owned());
+
     {
         let matrix = matrix.transpose();
-        println!("{}", matrix.compute_pt_one());
+        println!("{}", matrix.compute_pt_one(ops));
     }
 
     Ok(())
