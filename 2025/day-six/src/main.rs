@@ -1,15 +1,15 @@
-use std::io::BufRead;
+use std::{borrow::Cow, io::BufRead};
 
 #[derive(Debug)]
 struct Matrix<'a> {
-    value: Vec<Vec<&'a str>>,
+    value: Vec<Vec<Cow<'a, str>>>,
 }
 
 impl<'a> Matrix<'a> {
-    fn from_lines(lines: &'a [String]) -> Self {
+    fn from_lines(lines: &'a [&String]) -> Self {
         let value = lines
             .iter()
-            .map(|l| l.split_whitespace().collect::<Vec<_>>())
+            .map(|l| l.split_whitespace().map(Cow::Borrowed).collect::<Vec<_>>())
             .collect::<Vec<_>>();
 
         Matrix { value }
@@ -19,7 +19,7 @@ impl<'a> Matrix<'a> {
         let n = self.value.len();
         let m = self.value.first().map_or(0, |c| c.len());
         let value = (0..m)
-            .map(|j| (0..n).map(|i| self.value[i][j]).collect())
+            .map(|j| (0..n).map(|i| self.value[i][j].clone()).collect())
             .collect();
 
         Matrix { value }
@@ -51,12 +51,7 @@ fn main() -> std::io::Result<()> {
         .map(|l| l.split_whitespace().collect::<Vec<_>>())
         .expect("operations row");
 
-    let lines = lines
-        .iter()
-        .take(lines.len() - 1)
-        .map(|l| l.to_owned())
-        .collect::<Vec<_>>();
-
+    let lines = lines.iter().take(lines.len() - 1).collect::<Vec<_>>();
     {
         let matrix = Matrix::from_lines(&lines).transpose();
         println!("{}", matrix.compute_pt_one(&ops));
