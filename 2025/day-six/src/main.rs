@@ -6,7 +6,7 @@ struct Matrix<'a> {
 }
 
 impl<'a> Matrix<'a> {
-    fn for_pt_one(lines: &'a [String]) -> Self {
+    fn from_lines(lines: &'a [String]) -> Self {
         let value = lines
             .iter()
             .map(|l| l.split_whitespace().collect::<Vec<_>>())
@@ -58,7 +58,7 @@ fn main() -> std::io::Result<()> {
         .collect::<Vec<_>>();
 
     {
-        let matrix = Matrix::for_pt_one(&lines).transpose();
+        let matrix = Matrix::from_lines(&lines).transpose();
         println!("{}", matrix.compute_pt_one(&ops));
     }
 
