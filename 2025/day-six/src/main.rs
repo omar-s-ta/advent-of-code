@@ -15,6 +15,15 @@ impl<'a> Matrix<'a> {
         Matrix { value }
     }
 
+    fn as_chars(lines: &'a [&String]) -> Self {
+        let value = lines
+            .iter()
+            .map(|r| r.chars().map(|c| Cow::Owned(c.to_string())).collect())
+            .collect();
+
+        Matrix { value }
+    }
+
     fn transpose(&self) -> Self {
         let n = self.value.len();
         let m = self.value.first().map_or(0, |c| c.len());
@@ -39,13 +48,32 @@ impl<'a> Matrix<'a> {
             })
             .sum()
     }
+
+    fn compute_pt_two(&self, ops: &[&str]) -> usize {
+        self.value
+            .split(|r| r.iter().all(|c| c == " "))
+            .collect::<Vec<_>>()
+            .iter()
+            .enumerate()
+            .map(|(i, row)| {
+                let values = row
+                    .iter()
+                    .filter_map(|col| col.join("").trim().parse::<usize>().ok());
+
+                if ops[i] == "*" {
+                    values.product::<usize>()
+                } else {
+                    values.sum::<usize>()
+                }
+            })
+            .sum()
+    }
 }
 
 fn main() -> std::io::Result<()> {
     let f = std::fs::File::open("src/in.txt")?;
     let reader = std::io::BufReader::new(f);
     let lines = reader.lines().map_while(Result::ok).collect::<Vec<_>>();
-
     let ops = lines
         .last()
         .map(|l| l.split_whitespace().collect::<Vec<_>>())
@@ -56,6 +84,9 @@ fn main() -> std::io::Result<()> {
         let matrix = Matrix::from_lines(&lines).transpose();
         println!("{}", matrix.compute_pt_one(&ops));
     }
-
+    {
+        let matrix = Matrix::as_chars(&lines).transpose();
+        println!("{}", matrix.compute_pt_two(&ops))
+    }
     Ok(())
 }
