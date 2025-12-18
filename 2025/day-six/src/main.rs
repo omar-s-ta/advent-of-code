@@ -1,24 +1,23 @@
-use std::{borrow::Cow, io::BufRead};
+use std::io::BufRead;
 
-#[derive(Debug)]
-struct Matrix<'a> {
-    value: Vec<Vec<Cow<'a, str>>>,
+struct Matrix {
+    value: Vec<Vec<String>>,
 }
 
-impl<'a> Matrix<'a> {
-    fn from_lines(lines: &'a [&String]) -> Self {
+impl Matrix {
+    fn from_lines(lines: &[&String]) -> Self {
         let value = lines
             .iter()
-            .map(|l| l.split_whitespace().map(Cow::Borrowed).collect::<Vec<_>>())
-            .collect::<Vec<_>>();
+            .map(|l| l.split_whitespace().map(|s| s.to_string()).collect())
+            .collect();
 
         Matrix { value }
     }
 
-    fn as_chars(lines: &'a [&String]) -> Self {
+    fn as_chars(lines: &[&String]) -> Self {
         let value = lines
             .iter()
-            .map(|r| r.chars().map(|c| Cow::Owned(c.to_string())).collect())
+            .map(|r| r.chars().map(|c| c.to_string()).collect())
             .collect();
 
         Matrix { value }
@@ -37,14 +36,9 @@ impl<'a> Matrix<'a> {
     fn compute_pt_one(&self, ops: &[&str]) -> usize {
         self.value
             .iter()
-            .enumerate()
-            .map(|(i, row)| {
-                let parsed = row.iter().filter_map(|s| s.parse::<usize>().ok());
-                if ops[i] == "*" {
-                    parsed.product::<usize>()
-                } else {
-                    parsed.sum::<usize>()
-                }
+            .zip(ops)
+            .map(|(row, &op)| {
+                Self::aggregate(row.iter().filter_map(|s| s.parse::<usize>().ok()), op)
             })
             .sum()
     }
@@ -52,41 +46,39 @@ impl<'a> Matrix<'a> {
     fn compute_pt_two(&self, ops: &[&str]) -> usize {
         self.value
             .split(|r| r.iter().all(|c| c == " "))
-            .collect::<Vec<_>>()
-            .iter()
-            .enumerate()
-            .map(|(i, row)| {
-                let values = row
-                    .iter()
-                    .filter_map(|col| col.join("").trim().parse::<usize>().ok());
-
-                if ops[i] == "*" {
-                    values.product::<usize>()
-                } else {
-                    values.sum::<usize>()
-                }
+            .zip(ops)
+            .map(|(row, &op)| {
+                Self::aggregate(
+                    row.iter()
+                        .filter_map(|col| col.concat().trim().parse::<usize>().ok()),
+                    op,
+                )
             })
             .sum()
+    }
+
+    fn aggregate<I>(values: I, op: &str) -> usize
+    where
+        I: Iterator<Item = usize>,
+    {
+        match op {
+            "+" => values.sum(),
+            _ => values.product(),
+        }
     }
 }
 
 fn main() -> std::io::Result<()> {
-    let f = std::fs::File::open("src/in.txt")?;
-    let reader = std::io::BufReader::new(f);
+    let file = std::fs::File::open("src/in.txt")?;
+    let reader = std::io::BufReader::new(file);
     let lines = reader.lines().map_while(Result::ok).collect::<Vec<_>>();
-    let ops = lines
-        .last()
-        .map(|l| l.split_whitespace().collect::<Vec<_>>())
-        .expect("operations row");
+    let (ops, lines) = lines.split_last().expect("operations row");
+    let ops = ops.split_whitespace().collect::<Vec<_>>();
+    let lines = lines.iter().collect::<Vec<_>>();
 
-    let lines = lines.iter().take(lines.len() - 1).collect::<Vec<_>>();
-    {
-        let matrix = Matrix::from_lines(&lines).transpose();
-        println!("{}", matrix.compute_pt_one(&ops));
-    }
-    {
-        let matrix = Matrix::as_chars(&lines).transpose();
-        println!("{}", matrix.compute_pt_two(&ops))
-    }
+    let one = Matrix::from_lines(&lines).transpose().compute_pt_one(&ops);
+    let two = Matrix::as_chars(&lines).transpose().compute_pt_two(&ops);
+
+    println!("{} {}", one, two);
     Ok(())
 }
