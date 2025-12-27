@@ -20,6 +20,20 @@ impl Cell {
     fn is_start(&self) -> bool {
         matches!(self, Cell::Start)
     }
+
+    fn compute(&self, (i, j): Position, cols: usize, count: &mut [Vec<usize>]) {
+        match self {
+            Cell::Start => count[i][j] = 1,
+            Cell::Splitter => {
+                count[i][j - 1] += count[i - 1][j];
+                if j + 1 < cols {
+                    count[i][j + 1] += count[i - 1][j];
+                }
+            }
+            Cell::Empty if i > 0 => count[i][j] += count[i - 1][j],
+            _ => count[i][j] = 0,
+        }
+    }
 }
 
 struct Grid {
@@ -41,9 +55,23 @@ impl Grid {
     }
 
     fn splitters_count(&self) -> usize {
-        let mut visited = HashSet::new();
-        let start = self.find_start();
-        self.pt_one(start, &mut visited)
+        self.find_start()
+            .map(|start| {
+                let mut visited = HashSet::new();
+                self.pt_one(start, &mut visited)
+            })
+            .unwrap_or_default()
+    }
+
+    fn paths_count(&self) -> usize {
+        self.cells()
+            .fold(vec![vec![0; self.cols]; self.rows], |mut count, (i, j)| {
+                self.repr[i][j].compute((i, j), self.cols, &mut count);
+                count
+            })
+            .last()
+            .map(|row| row.iter().sum())
+            .unwrap_or_default()
     }
 
     fn pt_one(&self, p: Position, visited: &mut HashSet<Position>) -> usize {
@@ -60,10 +88,8 @@ impl Grid {
         }
     }
 
-    fn find_start(&self) -> Position {
-        self.cells()
-            .find(|p| self.repr[p.0][p.1].is_start())
-            .expect("A start Position")
+    fn find_start(&self) -> Option<Position> {
+        self.cells().find(|&(i, j)| self.repr[i][j].is_start())
     }
 
     fn cells(&self) -> impl Iterator<Item = Position> {
@@ -79,9 +105,7 @@ fn main() -> std::io::Result<()> {
     let file = std::fs::File::open("src/in.txt")?;
     let reader = std::io::BufReader::new(file);
     let lines = reader.lines().map_while(Result::ok).collect::<Vec<_>>();
-
     let grid = Grid::from_lines(&lines);
-    println!("{}", grid.splitters_count());
-
+    println!("{} {}", grid.splitters_count(), grid.paths_count());
     Ok(())
 }
