@@ -106,6 +106,29 @@ impl Edge {
     }
 }
 
+struct Playground {
+    edges: Vec<Edge>,
+    nodes_count: usize,
+}
+
+impl Playground {
+    fn biggest_three(&self) -> usize {
+        let mut set = DisjointSet::new(self.nodes_count);
+        self.edges
+            .iter()
+            .take(CLOSEST)
+            .for_each(|e| set.union(e.i, e.j));
+
+        let mut sizes = (0..self.nodes_count)
+            .map(|i| set.len(i))
+            .collect::<Vec<_>>();
+        sizes.sort_by(|a, b| b.cmp(a));
+        sizes.dedup();
+
+        sizes.iter().take(BIGGEST).product::<usize>()
+    }
+}
+
 fn main() -> std::io::Result<()> {
     let file = std::fs::File::open("src/in.txt")?;
     let reader = std::io::BufReader::new(file);
@@ -118,14 +141,11 @@ fn main() -> std::io::Result<()> {
     let mut edges = Edge::edges(&positions);
     edges.sort_by(|a, b| a.dist.cmp(&b.dist));
 
-    let n = positions.len();
-    let mut set = DisjointSet::new(n);
-    edges.iter().take(CLOSEST).for_each(|e| set.union(e.i, e.j));
+    let playground = Playground {
+        edges,
+        nodes_count: positions.len(),
+    };
 
-    let mut sizes = (0..n).map(|i| set.len(i)).collect::<Vec<_>>();
-    sizes.sort_by(|a, b| b.cmp(a));
-    sizes.dedup();
-
-    println!("{}", sizes.iter().take(BIGGEST).product::<usize>());
+    println!("{}", playground.biggest_three());
     Ok(())
 }
