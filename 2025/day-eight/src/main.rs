@@ -7,6 +7,7 @@ struct DisjointSet {
     parent: Vec<usize>,
     rank: Vec<usize>,
     size: Vec<usize>,
+    sets_count: usize,
 }
 
 impl DisjointSet {
@@ -15,6 +16,7 @@ impl DisjointSet {
             parent: (0..n).collect(),
             rank: vec![0; n],
             size: vec![1; n],
+            sets_count: n,
         }
     }
 
@@ -27,6 +29,10 @@ impl DisjointSet {
 
     fn is_same_set(&mut self, a: usize, b: usize) -> bool {
         self.find(a) == self.find(b)
+    }
+
+    fn is_singleton(&self) -> bool {
+        self.sets_count == 1
     }
 
     fn len(&mut self, set: usize) -> usize {
@@ -48,6 +54,7 @@ impl DisjointSet {
         }
         self.parent[a] = b;
         self.size[b] += self.size[a];
+        self.sets_count -= 1;
     }
 }
 
@@ -64,6 +71,10 @@ impl Position {
         let dy = self.y - other.y;
         let dz = self.z - other.z;
         dx * dx + dy * dy + dz * dz
+    }
+
+    fn wall_dist(&self, other: Position) -> i64 {
+        self.x * other.x
     }
 }
 
@@ -87,11 +98,17 @@ struct Edge {
     i: usize,
     j: usize,
     dist: i64,
+    wall_distance: i64,
 }
 
 impl Edge {
-    fn new(i: usize, j: usize, dist: i64) -> Self {
-        Edge { i, j, dist }
+    fn new(i: usize, j: usize, dist: i64, wall_distance: i64) -> Self {
+        Edge {
+            i,
+            j,
+            dist,
+            wall_distance,
+        }
     }
 
     fn edges(positions: &[Position]) -> Vec<Edge> {
@@ -99,7 +116,11 @@ impl Edge {
         (0..n)
             .flat_map(|i| {
                 ((i + 1)..n)
-                    .map(move |j| Edge::new(i, j, positions[i].dist_square(positions[j])))
+                    .map(move |j| {
+                        let dist = positions[i].dist_square(positions[j]);
+                        let wall = positions[i].wall_dist(positions[j]);
+                        Edge::new(i, j, dist, wall)
+                    })
                     .collect::<Vec<_>>()
             })
             .collect()
@@ -127,6 +148,17 @@ impl Playground {
 
         sizes.iter().take(BIGGEST).product::<usize>()
     }
+
+    fn pt_two(&self) -> i64 {
+        self.edges
+            .iter()
+            .scan(DisjointSet::new(self.nodes_count), |set, edge| {
+                set.union(edge.i, edge.j);
+                Some((set.is_singleton(), edge.wall_distance))
+            })
+            .find_map(|(is_singleton, wall_distance)| is_singleton.then_some(wall_distance))
+            .unwrap_or_default()
+    }
 }
 
 fn main() -> std::io::Result<()> {
@@ -146,6 +178,6 @@ fn main() -> std::io::Result<()> {
         nodes_count: positions.len(),
     };
 
-    println!("{}", playground.biggest_three());
+    println!("{} {}", playground.biggest_three(), playground.pt_two());
     Ok(())
 }
