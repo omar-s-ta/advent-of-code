@@ -1,4 +1,7 @@
-use std::io::BufRead;
+use std::{
+    collections::{BinaryHeap, HashSet},
+    io::BufRead,
+};
 
 const CLOSEST: usize = 1000;
 const BIGGEST: usize = 3;
@@ -134,19 +137,20 @@ struct Playground {
 
 impl Playground {
     fn biggest_three(&self) -> usize {
-        let mut set = DisjointSet::new(self.nodes_count);
-        self.edges
-            .iter()
-            .take(CLOSEST)
-            .for_each(|e| set.union(e.i, e.j));
-
+        let mut set = self.edges.iter().take(CLOSEST).fold(
+            DisjointSet::new(self.nodes_count),
+            |mut set, edge| {
+                set.union(edge.i, edge.j);
+                set
+            },
+        );
         let mut sizes = (0..self.nodes_count)
             .map(|i| set.len(i))
-            .collect::<Vec<_>>();
-        sizes.sort_by(|a, b| b.cmp(a));
-        sizes.dedup();
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<BinaryHeap<_>>();
 
-        sizes.iter().take(BIGGEST).product::<usize>()
+        std::iter::from_fn(|| sizes.pop()).take(BIGGEST).product()
     }
 
     fn pt_two(&self) -> i64 {
