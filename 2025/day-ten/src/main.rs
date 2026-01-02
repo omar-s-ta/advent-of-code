@@ -73,6 +73,10 @@ mod one {
 }
 
 mod two {
+    // My first Gaussian elimination implementation.
+    // Claude Code assisted with explaining the algorithm and guiding the approach.
+    // All code was written by me.
+
     struct Manual {
         matrix: Vec<Vec<i32>>,
         rows: usize,
