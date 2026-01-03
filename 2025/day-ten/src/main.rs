@@ -149,28 +149,25 @@ mod two {
             }
         }
 
-        fn substitue(&self, pivots: &[usize], solution: &mut [i32]) -> bool {
-            for (r, &col) in pivots.iter().enumerate().rev() {
-                let rhs = self.matrix[r]
-                    .last()
-                    .map(|&b| {
-                        b - ((col + 1)..self.cols - 1)
+        fn substitute(&self, pivots: &[usize], solution: &mut [i32]) -> bool {
+            pivots
+                .iter()
+                .enumerate()
+                .rev()
+                .try_fold((), |(), (r, &col)| {
+                    let rhs = self.matrix[r].last().copied()?
+                        - ((col + 1)..self.cols - 1)
                             .map(|c| self.matrix[r][c] * solution[c])
-                            .sum::<i32>()
-                    })
-                    .unwrap();
+                            .sum::<i32>();
 
-                let coefficient = self.matrix[r][col];
-                if rhs % coefficient != 0 {
-                    return false;
-                }
-                let value = rhs / coefficient;
-                if value < 0 {
-                    return false;
-                }
-                solution[col] = value;
-            }
-            true
+                    let coefficient = self.matrix[r][col];
+                    (rhs % coefficient == 0)
+                        .then_some(rhs / coefficient)
+                        .filter(|&v| v >= 0)
+                        .inspect(|&value| solution[col] = value)
+                        .map(|_| ())
+                })
+                .is_some()
         }
 
         fn search(
@@ -186,7 +183,7 @@ mod two {
                 return;
             }
             if free_at == free_vars.len() {
-                if self.substitue(pivots, solution) {
+                if self.substitute(pivots, solution) {
                     *result = solution.iter().sum::<i32>().min(*result);
                 }
             } else {
